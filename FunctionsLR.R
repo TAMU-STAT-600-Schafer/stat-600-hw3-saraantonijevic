@@ -41,6 +41,9 @@ LRMultiClass <- function(X, y, Xt, yt, numIter = 50, eta = 0.1, lambda = 1, beta
     stop("The number of columns in X and Xt do not match.")
   }
   # Check eta is positive
+  if(eta<= 0){
+    stop("Eta must be positive")
+  }
   
   # Check lambda is non-negative
   
