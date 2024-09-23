@@ -68,6 +68,13 @@ LRMultiClass <- function(X, y, Xt, yt, numIter = 50, eta = 0.1, lambda = 1, beta
   
   ## Calculate corresponding pk, objective value f(beta_init), training error and testing error given the starting point beta_init
   ##########################################################################
+
+  #Calculate corresponding pk
+  calculateProbs = function(X, beta){
+    expXB = exp(X %*% beta) #matrix of exponentiation linear combinations
+    return(expXB/ rowSums(expXB))  #normalization to get probs  
+  }
+  
   
   ## Newton's method cycle - implement the update EXACTLY numIter iterations
   ##########################################################################
