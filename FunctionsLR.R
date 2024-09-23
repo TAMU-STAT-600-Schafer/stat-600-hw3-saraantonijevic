@@ -98,8 +98,28 @@ LRMultiClass <- function(X, y, Xt, yt, numIter = 50, eta = 0.1, lambda = 1, beta
   ## Newton's method cycle - implement the update EXACTLY numIter iterations
   ##########################################################################
  
-  # Within one iteration: perform the update, calculate updated objective function and training/testing errors in %
+  for( t in 1:numIter){
+    
+    # Within one iteration: perform the update, calculate updated objective function and training/testing errors in %
+    for(k in 1:K){
+      # Calculations for Pk (probabilities for class k) and Wk (diagonal matrix for Newton's method)
+      Pk = P[, k]  # Probabilities for class k
+      Wk = diag(Pk * (1 - Pk))  # Diagonal weight matrix
+      
+      # Gradient for beta_k
+      gradient = t(X) %*% (Pk - (y == (k - 1))) + lambda * beta[, k]
+    }
+    
+    # Hessian for beta_k (approximated as X^T W_k X + lambda I)
+    hessian = t(X) %*% Wk %*% X + lambda * diag(p)
+    
+    # Newton's method update for beta_k (with learning rate eta)
+    beta[, k] = beta[, k] - eta * solve(hessian) %*% gradient
+  }
   
+  P = calculateProbs(X, beta)
+  objective[t+1] = calcObjective(P, y, beta, lambda)
+  error_train[t+1] = calcError(pTest, yt)
   
   ## Return output
   ##########################################################################
