@@ -82,7 +82,18 @@ LRMultiClass <- function(X, y, Xt, yt, numIter = 50, eta = 0.1, lambda = 1, beta
     regularization = (lamda/2) * sum(beta^2) 
     return(logLikelihood + regularization)
   }
+
+  #calculate training error
   
+  calcError = function(P, y){
+    predicted = max.col(P) - 1 #returns the column index of the highest value in each row
+    return(mean(predicted != y) * 100) #percentage of misclassifications
+  }
+  
+  #calculate test error
+  
+  pTest = calculateProbs(Xt, beta) #probabilities for the test data
+  error_test = calcError(pTest, yt) #calculate test error
   
   ## Newton's method cycle - implement the update EXACTLY numIter iterations
   ##########################################################################
