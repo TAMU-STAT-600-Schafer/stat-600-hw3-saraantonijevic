@@ -46,8 +46,25 @@ LRMultiClass <- function(X, y, Xt, yt, numIter = 50, eta = 0.1, lambda = 1, beta
   }
   
   # Check lambda is non-negative
+  if(lambda < 0){
+    stop("Lambda must be non-negative.")
+  }
   
   # Check whether beta_init is NULL. If NULL, initialize beta with p x K matrix of zeroes. If not NULL, check for compatibility of dimensions with what has been already supplied.
+  if (is.null(beta_init)){
+    #initialize beta with p x K matrix of zeroes
+    beta = matrix(0, nrow = ncol(X), ncol = length(unique(y)))
+  }
+  else{
+    # not NULL, check for compatibility of dimensions with what has been already supplied
+    if(nrow(beta_init) != ncol(X) || ncol(beta_init) != length(unique(y))){
+      stop("beta_init dimensions are incompatible with X and y")
+    }
+    beta = beta_init
+  }
+  objective = numeric(numIter + 1)
+  error_train = numeric(numIter + 1)
+  error_test - (numIter + 1) 
   
   ## Calculate corresponding pk, objective value f(beta_init), training error and testing error given the starting point beta_init
   ##########################################################################
