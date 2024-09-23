@@ -74,6 +74,14 @@ LRMultiClass <- function(X, y, Xt, yt, numIter = 50, eta = 0.1, lambda = 1, beta
     expXB = exp(X %*% beta) #matrix of exponentiation linear combinations
     return(expXB/ rowSums(expXB))  #normalization to get probs  
   }
+  #objective value f(beta_init)
+  calcObjective = function(P, y, beta, lambda){
+    #negative log-likelohood: sum over the log of the prob corresponding to the true class labels
+    logLikelihood = -sum(log(P[cbind(1:nrow(X), y + 1)])) #y +1 in order to adjust for R's indexing
+    
+    regularization = (lamda/2) * sum(beta^2) 
+    return(logLikelihood + regularization)
+  }
   
   
   ## Newton's method cycle - implement the update EXACTLY numIter iterations
