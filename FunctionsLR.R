@@ -67,83 +67,80 @@ LRMultiClass = function(X, y, Xt, yt, numIter = 50, eta = 0.1, lambda = 1, beta_
     beta = beta_init
   }
   
+  
   #Initialize objective, error_train, and error_test vectors
   objective = numeric(numIter + 1)
   error_train = numeric(numIter + 1)
   error_test = numeric(numIter + 1) 
+  
+  
+  
+  
   
   ## Calculate corresponding pk, objective value f(beta_init), training error and testing error given the starting point beta_init
   ##########################################################################
 
   #Calculate corresponding pk
   calculateProbs = function(X, beta){
-    linearComb = X %*% beta #computes linear combo of feature matrix X and the coeff matrix beta
-    expXB = exp(linearComb - apply(linearComb,1, max)) #applies softmax operation in numerically stable way 
-    return(expXB/ rowSums(expXB))  #normalization to get probs  
+    linearComb = X %*% beta
+    expXB = exp(linearComb - apply(linearComb, 1, max)) #softmax transformation
+    return(expXB / rowSums(expXB))
   }
   
   #objective value f(beta_init)
   calcObjective = function(P, y, beta, lambda){
-    #negative log-likelohood: sum over the log of the prob corresponding to the true class labels
-    logLikelihood = -sum(log(P[cbind(1:nrow(X), y + 1)] + 1e-10)) #y +1 in order to adjust for R's indexing
-    
-    regularization =  (lambda / 2) * sum(beta^2)#L2 penalty
-    
+    logLikelihood = -sum(log(P[cbind(1:nrow(X), y + 1)] + 1e-10))  # Log-likelihood
+    regularization = (lambda / 2) * sum(beta^2)  # L2 regularization
     return(logLikelihood + regularization)
   }
-
-  #calculate training error
   
+  
+  #calculate training error
   calcError = function(P, y){
-    predicted = max.col(P) - 1 #returns the column index of the highest value in each row
-    return(mean(predicted != y) * 100) #percentage of misclassifications
+    predicted = max.col(P) - 1 # Class prediction
+    return(mean(predicted != y) * 100) #misclassification rate
   }
   
+  
   #initial probabilities and errors
-  prob_train = calculateProbs(X, beta) #calc probabilities for training data using beta values
-  prob_test = calculateProbs(Xt, beta)#calc probabilities for testing data using beta values
+  prob_train = calculateProbs(X, beta)
+  prob_test = calculateProbs(Xt, beta)
   
-  objective[1] = calcObjective(prob_train, y, beta, lambda) #calc the initial objective function value (negative log-likelihood + regularization) for the training data, using the current values of prob_train, y, beta, and lambda
- 
-  error_train[1] = calcError(prob_train, y) #calc the initial training error based on the current predictions prob_train and true class labels y
-  error_test[1] = calcError(prob_test, yt) #calc the initial test error based on the current predictions prob_test and true class labels yt for the test data
-  
+  objective[1] = calcObjective(prob_train, y, beta, lambda)
+  error_train[1] = calcError(prob_train, y)
+  error_test[1] = calcError(prob_test, yt)
   
   ## Newton's method cycle - implement the update EXACTLY numIter iterations
   ##########################################################################
- 
-  for( t in 1:numIter){
-    
-    
-    # Update probabilities before Newton's method loop
-    #probabilitiesUpdate = calculateProbs(X, beta)
-    
-    # Within one iteration: perform the update, calculate updated objective function and training/testing errors in %
-    for(k in 1:K){
-      Pk = prob_train[,k] #extract probabilities for class k
+  for (t in 1:numIter){
+    for (k in 1:K){
+      Pk = prob_train[, k]  # Extract probabilities for class k
       
-      weightedX = X * sqrt(Pk * (1 - Pk)) #element-wise multiplication for memory efficiency
-      
-
       # Gradient for beta_k
       gradient = t(X) %*% (Pk - as.numeric(y == (k - 1))) + lambda * beta[, k]
-     
       
-       # Hessian for beta_k (approximated as X^T W_k X + lambda I)
-      hessian = t(weightedX) %*% weightedX %*% X + lambda * diag(p)
+      # Diagonal elements of Wk (without constructing Wk explicitly)
+      Wk_diag = Pk * (1 - Pk)
       
-      # Newton's method update for beta_k (with learning rate eta)
-      beta[, k] = beta[, k] - eta * solve(hessian, gradient)
+      # Compute Hessian for beta_k without constructing Wk explicitly
+      hessian = t(X) %*% (Wk_diag * X) + lambda * diag(p)
       
+      # Solve the linear system for the update step (avoid explicit matrix inversion)
+      delta_beta = solve(hessian, gradient)
+      
+      # Damped Newton update
+      beta[, k] = beta[, k] - eta * delta_beta
     }
+    
+    #recalc probabilities after beta update
     prob_train = calculateProbs(X, beta)
     prob_test = calculateProbs(Xt, beta)
-    #update probabilities and ojective function
-    objective[t+1] = calcObjective(prob_train, y, beta, lambda)
-    error_train[t+1] = calcError(prob_train, y)
-    error_test[t+1] = calcError(prob_test, yt)
     
-   }
+    #update objective function and errors
+    objective[t + 1] = calcObjective(prob_train, y, beta, lambda)
+    error_train[t + 1] = calcError(prob_train, y)
+    error_test[t + 1] = calcError(prob_test, yt)
+  }
   
   ## Return output
   ##########################################################################
