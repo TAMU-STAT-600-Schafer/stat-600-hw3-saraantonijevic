@@ -49,6 +49,8 @@ LRMultiClass <- function(X, y, Xt, yt, numIter = 50, eta = 0.1, lambda = 1, beta
   if(lambda < 0){
     stop("Lambda must be non-negative.")
   }
+  K = length(unique(y)) #number of classes
+  p = ncol(X) #number of features
   
   # Check whether beta_init is NULL. If NULL, initialize beta with p x K matrix of zeroes. If not NULL, check for compatibility of dimensions with what has been already supplied.
   if (is.null(beta_init)){
@@ -80,7 +82,8 @@ LRMultiClass <- function(X, y, Xt, yt, numIter = 50, eta = 0.1, lambda = 1, beta
     #negative log-likelohood: sum over the log of the prob corresponding to the true class labels
     logLikelihood = -sum(log(P[cbind(1:nrow(X), y + 1)])) #y +1 in order to adjust for R's indexing
     
-    regularization =  (lambda / 2) * sum(beta^2) 
+    regularization =  (lambda / 2) * sum(beta^2)
+    
     return(logLikelihood + regularization)
   }
 
@@ -95,10 +98,10 @@ LRMultiClass <- function(X, y, Xt, yt, numIter = 50, eta = 0.1, lambda = 1, beta
   
   prob = calculateProbs(X, beta) 
   objective[1] = calcObjective(prob, y, beta, lambda)
-  error_train[1] = calcError(prob, y)
+  error_train[1] = calcError(prob, y) #use y for training error
 
   pTest = calculateProbs(Xt, beta)
-  error_test[1] = calcError(pTest, yt)
+  error_test[1] = calcError(pTest, yt) #yt for testing error
   
   
   ## Newton's method cycle - implement the update EXACTLY numIter iterations
@@ -111,7 +114,7 @@ LRMultiClass <- function(X, y, Xt, yt, numIter = 50, eta = 0.1, lambda = 1, beta
     probabilitiesUpdate = calculateProbs(X, beta)
     
     # Within one iteration: perform the update, calculate updated objective function and training/testing errors in %
-    for(k in 1:ncol(beta)){
+    for(k in 1:K){
       # Calculations for Pk (probabilities for class k) and Wk (diagonal matrix for Newton's method)
       Pk = probabilitiesUpdate[, k]  # Probabilities for class k
       Wk = diag(Pk * (1 - Pk))  # Diagonal weight matrix
@@ -119,7 +122,7 @@ LRMultiClass <- function(X, y, Xt, yt, numIter = 50, eta = 0.1, lambda = 1, beta
       # Gradient for beta_k
       gradient = t(X) %*% (Pk - (y == (k - 1))) + lambda * beta[, k]
       # Hessian for beta_k (approximated as X^T W_k X + lambda I)
-      hessian = t(X) %*% Wk %*% X + lambda * diag(ncol(X))
+      hessian = t(X) %*% Wk %*% X + lambda * diag(p)
       
       # Newton's method update for beta_k (with learning rate eta)
       beta[, k] = beta[, k] - eta * solve(hessian) %*% gradient
@@ -129,7 +132,7 @@ LRMultiClass <- function(X, y, Xt, yt, numIter = 50, eta = 0.1, lambda = 1, beta
     #update probabilities and ojective function
     probabilitiesUpdate = calculateProbs(X, beta)
     objective[t+1] = calcObjective(probabilitiesUpdate, y, beta, lambda)
-    error_train[t+1] = calcError(probabilitiesUpdate, yt)
+    error_train[t+1] = calcError(probabilitiesUpdate, y)
     
     
     
