@@ -38,4 +38,22 @@ result$objective
 plot(result$objective, type = "b", col = "blue", xlab = "Iteration", ylab = "Objective Value", main = "Objective Value Over Iterations")
 
 
+#Testing classification errors over iterations
+cat("Training error over iterations: ", result$error_train, "\n")
+cat("Testing error over iterations: ", result$error_test, "\n")
+
+plot(result$error_train, type = "b", col = "red", ylim = c(0, max(result$error_train, result$error_test)), 
+     xlab = "Iteration", ylab = "Error %", main = "Training and Test Error Over Iterations")
+lines(result$error_test, type = "b", col = "green")
+legend("topright", legend = c("Train Error", "Test Error"), col = c("red", "green"), lty = 1, pch = 1)
+
+
+#Check if decreasing
+decreasing = all(diff(result$objective) <= 0)
+if (decreasing) {
+  cat("The objective function decreases across iterations.\n")
+} else {
+  cat("The objective function does not consistently decrease!\n")
+}
+
 
