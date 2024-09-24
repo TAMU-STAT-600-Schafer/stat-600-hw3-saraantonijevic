@@ -64,7 +64,7 @@ LRMultiClass <- function(X, y, Xt, yt, numIter = 50, eta = 0.1, lambda = 1, beta
   }
   objective = numeric(numIter + 1)
   error_train = numeric(numIter + 1)
-  error_test - (numIter + 1) 
+  error_test = numeric(numIter + 1) 
   
   ## Calculate corresponding pk, objective value f(beta_init), training error and testing error given the starting point beta_init
   ##########################################################################
@@ -74,12 +74,13 @@ LRMultiClass <- function(X, y, Xt, yt, numIter = 50, eta = 0.1, lambda = 1, beta
     expXB = exp(X %*% beta) #matrix of exponentiation linear combinations
     return(expXB/ rowSums(expXB))  #normalization to get probs  
   }
+  
   #objective value f(beta_init)
   calcObjective = function(P, y, beta, lambda){
     #negative log-likelohood: sum over the log of the prob corresponding to the true class labels
     logLikelihood = -sum(log(P[cbind(1:nrow(X), y + 1)])) #y +1 in order to adjust for R's indexing
     
-    regularization = (lamda/2) * sum(beta^2) 
+    regularization =  (lambda / 2) * sum(beta^2) 
     return(logLikelihood + regularization)
   }
 
@@ -92,34 +93,51 @@ LRMultiClass <- function(X, y, Xt, yt, numIter = 50, eta = 0.1, lambda = 1, beta
   
   #calculate test error
   
-  pTest = calculateProbs(Xt, beta) #probabilities for the test data
-  error_test = calcError(pTest, yt) #calculate test error
+  prob = calculateProbs(X, beta) 
+  objective[1] = calcObjective(prob, y, beta, lambda)
+  error_train[1] = calcError(prob, y)
+
+  pTest = calculateProbs(Xt, beta)
+  error_test[1] = calcError(pTest, yt)
+  
   
   ## Newton's method cycle - implement the update EXACTLY numIter iterations
   ##########################################################################
  
   for( t in 1:numIter){
     
+    
+    # Update probabilities before Newton's method loop
+    probabilitiesUpdate = calculateProbs(X, beta)
+    
     # Within one iteration: perform the update, calculate updated objective function and training/testing errors in %
-    for(k in 1:K){
+    for(k in 1:ncol(beta)){
       # Calculations for Pk (probabilities for class k) and Wk (diagonal matrix for Newton's method)
-      Pk = P[, k]  # Probabilities for class k
+      Pk = probabilitiesUpdate[, k]  # Probabilities for class k
       Wk = diag(Pk * (1 - Pk))  # Diagonal weight matrix
       
       # Gradient for beta_k
       gradient = t(X) %*% (Pk - (y == (k - 1))) + lambda * beta[, k]
+      # Hessian for beta_k (approximated as X^T W_k X + lambda I)
+      hessian = t(X) %*% Wk %*% X + lambda * diag(ncol(X))
+      
+      # Newton's method update for beta_k (with learning rate eta)
+      beta[, k] = beta[, k] - eta * solve(hessian) %*% gradient
+      
     }
     
-    # Hessian for beta_k (approximated as X^T W_k X + lambda I)
-    hessian = t(X) %*% Wk %*% X + lambda * diag(p)
+    #update probabilities and ojective function
+    probabilitiesUpdate = calculateProbs(X, beta)
+    objective[t+1] = calcObjective(probabilitiesUpdate, y, beta, lambda)
+    error_train[t+1] = calcError(probabilitiesUpdate, yt)
     
-    # Newton's method update for beta_k (with learning rate eta)
-    beta[, k] = beta[, k] - eta * solve(hessian) %*% gradient
-  }
-  
-  P = calculateProbs(X, beta)
-  objective[t+1] = calcObjective(P, y, beta, lambda)
-  error_train[t+1] = calcError(pTest, yt)
+    
+    
+    #update tests
+    pTest = calculateProbs(Xt, beta)
+    error_test[t+1] = calcError(pTest, yt)
+    
+   }
   
   ## Return output
   ##########################################################################
