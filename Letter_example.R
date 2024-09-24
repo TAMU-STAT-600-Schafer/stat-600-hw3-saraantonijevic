@@ -51,5 +51,6 @@ benchmarkResult = microbenchmark(
 summary(benchmarkResult)
 
 # [ToDo] Report the median time of your code from microbenchmark above in the comments below
-
+medianTime = median(benchmarkResult$time) / 1e9
 # Median time:  (in sec)
+medianTime
