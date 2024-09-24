@@ -122,7 +122,7 @@ LRMultiClass = function(X, y, Xt, yt, numIter = 50, eta = 0.1, lambda = 1, beta_
       WkDiag = Pk * (1 - Pk) #diagonal elements of Wk
       
       
-      hessian = t(X) %*% (WkDiag * X) + lambda * diag(p)#hessian for beta_k
+      hessian = t(X) %*% (X * WkDiag) + lambda * diag(p)#hessian for beta_k
       
       #solving linear system for the update step (currently trying to avoid matrix inversion)
       deltaBeta = solve(hessian, gradient)
