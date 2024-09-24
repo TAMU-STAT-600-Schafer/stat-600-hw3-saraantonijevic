@@ -30,7 +30,11 @@ eta = 0.1
 lambda = 1
 
 
+result = LRMultiClass(X, y, Xt, yt, numIter, eta, lambda)
 
+cat("Training Error %: ", result$error_train, "\n")
 
+cat("Testing Error %: ", result$error_test, "\n")
 
+plot(result$objective, type = "l", main = "Objective Function", ylab = "Objective Value", xlab = "Iteration")
 
