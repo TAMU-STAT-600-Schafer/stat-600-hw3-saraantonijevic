@@ -1,5 +1,6 @@
 # Application of multi-class logistic to letters data
-
+install.packages("microbenchmark")
+library(microbenchmark)
 # Load the letter data
 #########################
 # Training data
@@ -42,7 +43,12 @@ plot(out3$error_test,  col = "green",type = 'o')
 
 
 # [ToDo] Use microbenchmark to time your code with lambda=1 and 50 iterations. To save time, only apply microbenchmark 5 times.
+benchmarkResult = microbenchmark(
+  out = LRMultiClass(X, Y, Xt, Yt, numIter = 50, eta = 0.1, lambda = 1),
+  times = 5
+)
 
+summary(benchmarkResult)
 
 # [ToDo] Report the median time of your code from microbenchmark above in the comments below
 
