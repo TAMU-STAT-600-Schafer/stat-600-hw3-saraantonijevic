@@ -16,7 +16,7 @@
 # error_train - (numIter + 1) length vector of training error % at each iteration (+ starting value)
 # error_test - (numIter + 1) length vector of testing error % at each iteration (+ starting value)
 # objective - (numIter + 1) length vector of objective values of the function that we are minimizing at each iteration (+ starting value)
-LRMultiClass <- function(X, y, Xt, yt, numIter = 50, eta = 0.1, lambda = 1, beta_init = NULL){
+LRMultiClass = function(X, y, Xt, yt, numIter = 50, eta = 0.1, lambda = 1, beta_init = NULL){
   ## Check the supplied parameters as described. You can assume that X, Xt are matrices; y, yt are vectors; and numIter, eta, lambda are scalars. You can assume that beta_init is either NULL (default) or a matrix.
   ###################################
   # Check that the first column of X and Xt are 1s, if not - display appropriate message and stop execution.
@@ -49,21 +49,25 @@ LRMultiClass <- function(X, y, Xt, yt, numIter = 50, eta = 0.1, lambda = 1, beta
   if(lambda < 0){
     stop("Lambda must be non-negative.")
   }
+  
+  
   K = length(unique(y)) #number of classes
   p = ncol(X) #number of features
   
   # Check whether beta_init is NULL. If NULL, initialize beta with p x K matrix of zeroes. If not NULL, check for compatibility of dimensions with what has been already supplied.
   if (is.null(beta_init)){
     #initialize beta with p x K matrix of zeroes
-    beta = matrix(0, nrow = ncol(X), ncol = length(unique(y)))
+    beta = matrix(0, nrow = p, ncol = K)
   }
   else{
     # not NULL, check for compatibility of dimensions with what has been already supplied
-    if(nrow(beta_init) != ncol(X) || ncol(beta_init) != length(unique(y))){
+    if(nrow(beta_init) != p || ncol(beta_init) != K){
       stop("beta_init dimensions are incompatible with X and y")
     }
     beta = beta_init
   }
+  
+  #Initialize objective, error_train, and error_test vectors
   objective = numeric(numIter + 1)
   error_train = numeric(numIter + 1)
   error_test = numeric(numIter + 1) 
@@ -73,16 +77,17 @@ LRMultiClass <- function(X, y, Xt, yt, numIter = 50, eta = 0.1, lambda = 1, beta
 
   #Calculate corresponding pk
   calculateProbs = function(X, beta){
-    expXB = exp(X %*% beta) #matrix of exponentiation linear combinations
+    linearComb = X %*% beta #computes linear combo of feature matrix X and the coeff matrix beta
+    expXB = exp(linearComb - apply(linearComb,1, max)) #applies softmax operation in numerically stable way 
     return(expXB/ rowSums(expXB))  #normalization to get probs  
   }
   
   #objective value f(beta_init)
   calcObjective = function(P, y, beta, lambda){
     #negative log-likelohood: sum over the log of the prob corresponding to the true class labels
-    logLikelihood = -sum(log(P[cbind(1:nrow(X), y + 1)])) #y +1 in order to adjust for R's indexing
+    logLikelihood = -sum(log(P[cbind(1:nrow(X), y + 1)] + 1e-10)) #y +1 in order to adjust for R's indexing
     
-    regularization =  (lambda / 2) * sum(beta^2)
+    regularization =  (lambda / 2) * sum(beta^2)#L2 penalty
     
     return(logLikelihood + regularization)
   }
@@ -94,14 +99,14 @@ LRMultiClass <- function(X, y, Xt, yt, numIter = 50, eta = 0.1, lambda = 1, beta
     return(mean(predicted != y) * 100) #percentage of misclassifications
   }
   
-  #calculate test error
+  #initial probabilities and errors
+  prob_train = calculateProbs(X, beta) #calc probabilities for training data using beta values
+  prob_test = calculateProbs(Xt, beta)#calc probabilities for testing data using beta values
   
-  prob = calculateProbs(X, beta) 
-  objective[1] = calcObjective(prob, y, beta, lambda)
-  error_train[1] = calcError(prob, y) #use y for training error
-
-  pTest = calculateProbs(Xt, beta)
-  error_test[1] = calcError(pTest, yt) #yt for testing error
+  objective[1] = calcObjective(prob_train, y, beta, lambda) #calc the initial objective function value (negative log-likelihood + regularization) for the training data, using the current values of prob_train, y, beta, and lambda
+ 
+  error_train[1] = calcError(prob_train, y) #calc the initial training error based on the current predictions prob_train and true class labels y
+  error_test[1] = calcError(prob_test, yt) #calc the initial test error based on the current predictions prob_test and true class labels yt for the test data
   
   
   ## Newton's method cycle - implement the update EXACTLY numIter iterations
@@ -111,34 +116,32 @@ LRMultiClass <- function(X, y, Xt, yt, numIter = 50, eta = 0.1, lambda = 1, beta
     
     
     # Update probabilities before Newton's method loop
-    probabilitiesUpdate = calculateProbs(X, beta)
+    #probabilitiesUpdate = calculateProbs(X, beta)
     
     # Within one iteration: perform the update, calculate updated objective function and training/testing errors in %
     for(k in 1:K){
-      # Calculations for Pk (probabilities for class k) and Wk (diagonal matrix for Newton's method)
-      Pk = probabilitiesUpdate[, k]  # Probabilities for class k
-      Wk = diag(Pk * (1 - Pk))  # Diagonal weight matrix
+      Pk = prob_train[,k] #extract probabilities for class k
       
+      weightedX = X * sqrt(Pk * (1 - Pk)) #element-wise multiplication for memory efficiency
+      
+
       # Gradient for beta_k
-      gradient = t(X) %*% (Pk - (y == (k - 1))) + lambda * beta[, k]
-      # Hessian for beta_k (approximated as X^T W_k X + lambda I)
-      hessian = t(X) %*% Wk %*% X + lambda * diag(p)
+      gradient = t(X) %*% (Pk - as.numeric(y == (k - 1))) + lambda * beta[, k]
+     
+      
+       # Hessian for beta_k (approximated as X^T W_k X + lambda I)
+      hessian = t(weightedX) %*% weightedX %*% X + lambda * diag(p)
       
       # Newton's method update for beta_k (with learning rate eta)
-      beta[, k] = beta[, k] - eta * solve(hessian) %*% gradient
+      beta[, k] = beta[, k] - eta * solve(hessian, gradient)
       
     }
-    
+    prob_train = calculateProbs(X, beta)
+    prob_test = calculateProbs(Xt, beta)
     #update probabilities and ojective function
-    probabilitiesUpdate = calculateProbs(X, beta)
-    objective[t+1] = calcObjective(probabilitiesUpdate, y, beta, lambda)
-    error_train[t+1] = calcError(probabilitiesUpdate, y)
-    
-    
-    
-    #update tests
-    pTest = calculateProbs(Xt, beta)
-    error_test[t+1] = calcError(pTest, yt)
+    objective[t+1] = calcObjective(prob_train, y, beta, lambda)
+    error_train[t+1] = calcError(prob_train, y)
+    error_test[t+1] = calcError(prob_test, yt)
     
    }
   
