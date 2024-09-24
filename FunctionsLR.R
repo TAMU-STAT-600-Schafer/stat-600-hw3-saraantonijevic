@@ -80,7 +80,7 @@ LRMultiClass = function(X, y, Xt, yt, numIter = 50, eta = 0.1, lambda = 1, beta_
   ## Calculate corresponding pk, objective value f(beta_init), training error and testing error given the starting point beta_init
   ##########################################################################
 
-  #Calculate corresponding pk
+  #calc corresponding pk
   calculateProbs = function(X, beta){
     linearComb = X %*% beta
     expXB = exp(linearComb - apply(linearComb, 1, max)) #softmax transformation
@@ -116,20 +116,19 @@ LRMultiClass = function(X, y, Xt, yt, numIter = 50, eta = 0.1, lambda = 1, beta_
     for (k in 1:K){
       Pk = prob_train[, k]  # Extract probabilities for class k
       
-      # Gradient for beta_k
+      #gradient for beta_k
       gradient = t(X) %*% (Pk - as.numeric(y == (k - 1))) + lambda * beta[, k]
+     
+      WkDiag = Pk * (1 - Pk) #diagonal elements of Wk
       
-      # Diagonal elements of Wk (without constructing Wk explicitly)
-      Wk_diag = Pk * (1 - Pk)
       
-      # Compute Hessian for beta_k without constructing Wk explicitly
-      hessian = t(X) %*% (Wk_diag * X) + lambda * diag(p)
+      hessian = t(X) %*% (WkDiag * X) + lambda * diag(p)#hessian for beta_k
       
-      # Solve the linear system for the update step (avoid explicit matrix inversion)
-      delta_beta = solve(hessian, gradient)
+      #solving linear system for the update step (currently trying to avoid matrix inversion)
+      deltaBeta = solve(hessian, gradient)
       
       # Damped Newton update
-      beta[, k] = beta[, k] - eta * delta_beta
+      beta[, k] = beta[, k] - eta * deltaBeta
     }
     
     #recalc probabilities after beta update
