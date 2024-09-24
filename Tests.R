@@ -1,22 +1,36 @@
 # This is a script to save your own tests for the function
 source("FunctionsLR.R")
 
-lettersTrain = read.table("https://raw.githubusercontent.com/TAMU-STAT-600-Schafer/stat-600-hw3-saraantonijevic/main/Data/letter-train.txt", header = FALSE)
+set.seed(123)
+
+#Creating sample data for testing
+
+n = 100 #number of samples per class
+p = 2 #number of features
+
+#Creating two normal populations
+xClass1 = matrix(rnorm(n*p, mean =2), ncol = p)
+
+xClass2 = matrix(rnorm(n*p, mean =2), ncol = p)
+
+X = rbind(xClass1, xClass2)
+X = cbind(1, X) #adding 1's as intercept
+
+y = c(rep(0, n), rep(1,n))
+
+#random test set 
+
+Xt = X
+yt = y
+
+numIter = 50
+
+eta = 0.1
+
+lambda = 1
 
 
-letterTest = read.table("https://raw.githubusercontent.com/TAMU-STAT-600-Schafer/stat-600-hw3-saraantonijevic/main/Data/letter-test.txt", header = FALSE)
 
 
-#exctract covariates 
-xTrain = as.matrix(lettersTrain[, -1]) #extracting training data features
-yTrain = as.numeric(lettersTrain[, 1])
-
-xTest = as.matrix(letterTest[,-1]) #all columns of test but features
-yTest = as.numeric(letterTest[, 1])
-
-numIter = 50 # number of iterations for newton's method
-eta = 0.1 #learning rate
-lambda = 1 #regularization param
 
 
-#Starting to initialize for logistic regression
