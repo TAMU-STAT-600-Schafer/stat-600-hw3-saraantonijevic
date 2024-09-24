@@ -57,3 +57,10 @@ if (decreasing) {
 }
 
 
+#More sample tests
+result2 = LRMultiClass(X_train, y_train, X_test, y_test, numIter = 50, eta = 0.05, lambda = 0.5)
+
+cat("New Objective values with eta = 0.05 and lambda = 0.5:", result2$objective)
+cat("New train errors with eta = 0.05 and lambda = 0.5:", result2$error_train)
+cat("New test errors with eta = 0.05 and lambda = 0.5:", result2$error_test)
+
