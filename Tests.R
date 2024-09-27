@@ -24,14 +24,14 @@ X = cbind(1, X)
 
 #splitting train/test sets
 trainIdx = sample(1:(2*n), size = 0.7 * 2*n)
-XTrain = X[trainIdx, ]
-yTrain = y[trainIdx]
+X_train = X[trainIdx, ]
+y_train = y[trainIdx]
 
-xTest = X[-trainIdx, ]
-yTest = y[-trainIdx]
+X_test = X[-trainIdx, ]
+y_test = y[-trainIdx]
 
 #running multi-class logistic regression
-result = LRMultiClass(XTrain, yTrain, xTest, yTest, numIter = 50, eta = 0.1, lambda = 1)
+result = LRMultiClass(X_train, y_train, X_test, y_test, numIter = 50, eta = 0.1, lambda = 1)
 
 result$objective
 
@@ -63,4 +63,5 @@ result2 = LRMultiClass(X_train, y_train, X_test, y_test, numIter = 50, eta = 0.0
 cat("New Objective values with eta = 0.05 and lambda = 0.5:", result2$objective)
 cat("New train errors with eta = 0.05 and lambda = 0.5:", result2$error_train)
 cat("New test errors with eta = 0.05 and lambda = 0.5:", result2$error_test)
+
 
